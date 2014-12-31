@@ -16,6 +16,9 @@ namespace Spaceship_Test
         private bool m_bExpired = false;
         private DateTime m_dtSpawnTime = DateTime.MinValue;
         private int m_iExpireDuration = 3000;
+        private int m_iMaxDivision = 0;
+        private int m_iSpreadFactor = 4;
+        private int m_iDivision = 0;
         #endregion
 
         #region Get/Set
@@ -32,6 +35,11 @@ namespace Spaceship_Test
 
         #region Initialize
         public void Initialize(PointF f_Position, SizeF f_Size, double f_dVX, double f_dVY)
+        {
+            this.Initialize(f_Position, f_Size, f_dVX, f_dVY, 0, 0);
+        }
+
+        public void Initialize(PointF f_Position, SizeF f_Size, double f_dVX, double f_dVY, int f_iMaxDivision, int f_iSpreadFactor)
         {
             m_Positon = f_Position;
             m_Size = f_Size;

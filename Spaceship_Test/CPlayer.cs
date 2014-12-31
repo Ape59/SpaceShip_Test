@@ -39,22 +39,13 @@ namespace Spaceship_Test
         }
         #endregion
 
-        #region Update
-        public void Update(Size f_FieldSize)
+        private void UpdateMovement(Size f_FieldSize)
         {
             double dAX = 0.0;
             double dAY = 0.0;
             double dVXDir = 0.0;
             double dVYDir = 0.0;
-            double dAimDirection = 0.0;
-            double dVXProjectile = 0.0;
-            double dVYProjectile = 0.0;
-            PointF centerPosition = PointF.Empty;
-            PointF projectilePosition = PointF.Empty;
-            SizeF projectileSize = SizeF.Empty;
-            CProjectile projectile = null;
 
-            #region Movement
             if (m_dVX > 0)
             {
                 dVXDir = 1.0;
@@ -138,36 +129,49 @@ namespace Spaceship_Test
                 m_Positon.Y = f_FieldSize.Height - m_Size.Height;
                 m_dVY = -m_dVY / 2.0;
             }
-            #endregion
+        }
 
-            #region Aiming
+        private void UpdateAiming(ref double f_dAimDirection)
+        {
+            f_dAimDirection = 0.0;
+            PointF centerPosition = PointF.Empty;
+
             centerPosition = GetCenterPosition();
 
-            dAimDirection = Math.Atan2(m_MousePosition.Y - centerPosition.Y, m_MousePosition.X - centerPosition.X);
+            f_dAimDirection = Math.Atan2(m_MousePosition.Y - centerPosition.Y, m_MousePosition.X - centerPosition.X);
 
-            m_AimPosition.X = centerPosition.X + (float)(Math.Cos(dAimDirection) * 2.0);
-            m_AimPosition.Y = centerPosition.Y + (float)(Math.Sin(dAimDirection) * 2.0);
-            #endregion
+            m_AimPosition.X = centerPosition.X + (float)(Math.Cos(f_dAimDirection) * 2.0);
+            m_AimPosition.Y = centerPosition.Y + (float)(Math.Sin(f_dAimDirection) * 2.0);
+        }
 
-            #region Projectiles
+        private void UpdateProjectiles(Size f_FieldSize, CProjectile f_Projectile)
+        {
+
+
             for (int i = 0; i < m_lstProjectiles.Count; i++)
             {
-                projectile = m_lstProjectiles[i];
-                projectile.Update(f_FieldSize);
-                if (projectile.OutOfField == true || projectile.Expired == true)
+                f_Projectile = m_lstProjectiles[i];
+                f_Projectile.Update(f_FieldSize);
+                if (f_Projectile.OutOfField == true || f_Projectile.Expired == true)
                 {
                     m_lstProjectiles.RemoveAt(i);
                     i--;
                 }
             }
-            #endregion
+        }
 
-            #region Shooting
+        private void UpdateShooting(CProjectile f_Projectile, ref double f_dAimDirection)
+        {
+            double dVXProjectile = 0.0;
+            double dVYProjectile = 0.0;
+            PointF projectilePosition = PointF.Empty;
+            SizeF projectileSize = SizeF.Empty;
+
             if (m_bShootingActive == true
-                && DateTime.Now > m_dtLastShoot.AddMilliseconds(m_iShootIntervall))
+                 && DateTime.Now > m_dtLastShoot.AddMilliseconds(m_iShootIntervall))
             {
-                dVXProjectile = m_dVX + Math.Cos(dAimDirection) * m_dVXMax / 2.0;
-                dVYProjectile = m_dVY + Math.Sin(dAimDirection) * m_dVYMax / 2.0;
+                dVXProjectile = m_dVX + Math.Cos(f_dAimDirection) * m_dVXMax / 2.0;
+                dVYProjectile = m_dVY + Math.Sin(f_dAimDirection) * m_dVYMax / 2.0;
 
                 projectileSize.Width = 0.2f;
                 projectileSize.Height = 0.2f;
@@ -175,15 +179,24 @@ namespace Spaceship_Test
                 projectilePosition.X = m_AimPosition.X - projectileSize.Width / 2.0f;
                 projectilePosition.Y = m_AimPosition.Y - projectileSize.Height / 2.0f;
 
-                projectile = new CProjectile();
-                projectile.Initialize(projectilePosition, projectileSize, dVXProjectile, dVYProjectile);
-                m_lstProjectiles.Add(projectile);
+                f_Projectile = new CProjectile();
+                f_Projectile.Initialize(projectilePosition, projectileSize, dVXProjectile, dVYProjectile, 2, 4);
+                m_lstProjectiles.Add(f_Projectile);
 
                 m_dtLastShoot = DateTime.Now;
             }
-            #endregion
+        }
 
+        #region Update
+        public void Update(Size f_FieldSize)
+        {
+            CProjectile projectile = null;
+            double dAimDirection = 0.0;
 
+            UpdateMovement(f_FieldSize);
+            UpdateAiming(ref dAimDirection);
+            UpdateProjectiles(f_FieldSize, projectile);
+            UpdateShooting(projectile, ref dAimDirection);
 
             #region Debug
             m_strDebugText = string.Empty;

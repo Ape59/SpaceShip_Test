@@ -8,221 +8,266 @@ namespace Spaceship_Test
     class CPlayer
     {
         #region Members
-        private PointF m_Positon = PointF.Empty;
-        private PointF m_AimPosition = PointF.Empty;
-        private PointF m_MousePosition = PointF.Empty;
-        private SizeF m_Size = SizeF.Empty;
-        private double m_dAX = 0.01;
-        private double m_dAY = 0.01;
-        private double m_dVX = 0.0;
-        private double m_dVY = 0.0;
-        private double m_dVXMax = 0.5;
-        private double m_dVYMax = 0.5;
+        private CVector2D m_Positon = null;
+        private CVector2D m_Size = null;
+        private CVector2D m_AimPosition = null;
+        private CVector2D m_MousePosition = null;
+        private CVector2D m_Acceleration = null;
+        private CVector2D m_Velocity = null;
+        private CVector2D m_VelocityMax = null;
+        private double m_dAimDirection = 0.0;
         private int m_iXDir = 0;
         private int m_iYDir = 0;
         private bool m_bShootingActive = false;
         private List<CProjectile> m_lstProjectiles = null;
         private DateTime m_dtLastShoot = DateTime.MinValue;
-        private int m_iShootIntervall = 5;
+        private int m_iShootIntervall = 30;
         private string m_strDebugText = string.Empty;
         private Font m_DebugTextFont = null;
+        private Random m_Random = null;
         #endregion
 
         #region Initialize
-        public void Initialize(PointF f_Position, SizeF f_Size)
+        public void Initialize(CVector2D f_Position, CVector2D f_Size)
         {
             m_Positon = f_Position;
             m_Size = f_Size;
 
+            m_AimPosition = CVector2D.Empty;
+            m_MousePosition = CVector2D.Empty;
+            m_Acceleration = new CVector2D(0.03, 0.03);
+            m_Velocity = new CVector2D(0.0, 0.0);
+            m_VelocityMax = new CVector2D(0.3, 0.3);
+
+            m_Random = new Random();
             m_lstProjectiles = new List<CProjectile>();
             m_DebugTextFont = new Font("Arial", 8);
         }
         #endregion
 
-        private void UpdateMovement(Size f_FieldSize)
+        #region Update
+        public void Update(CVector2D f_FieldSize)
         {
-            double dAX = 0.0;
-            double dAY = 0.0;
+            UpdateMovement(f_FieldSize);
+            UpdateAiming();
+            UpdateProjectiles(f_FieldSize);
+            UpdateShooting();
+
+            #region Debug
+            m_strDebugText = string.Empty;
+            m_strDebugText += string.Format("X:\t{0:0.000}\n", m_Positon.X);
+            m_strDebugText += string.Format("Y:\t{0:0.000}\n", m_Positon.Y);
+            m_strDebugText += string.Format("VX:\t{0:0.000}\n", m_Velocity.X);
+            m_strDebugText += string.Format("VY:\t{0:0.000}\n", m_Velocity.Y);
+            m_strDebugText += string.Format("a:\t{0:0.000}\n", m_dAimDirection);
+            m_strDebugText += string.Format("Count:\t{0}\n", m_lstProjectiles.Count);
+            #endregion
+        }
+
+        #region UpdateMovement
+        private void UpdateMovement(CVector2D f_FieldSize)
+        {
+            CVector2D acceleration = CVector2D.Empty;
             double dVXDir = 0.0;
             double dVYDir = 0.0;
 
-            if (m_dVX > 0)
+            if (m_Velocity.X > 0)
             {
                 dVXDir = 1.0;
             }
-            else if (m_dVX < 0)
+            else if (m_Velocity.X < 0)
             {
                 dVXDir = -1.0;
             }
 
-            if (m_dVY > 0)
+            if (m_Velocity.Y > 0)
             {
                 dVYDir = 1.0;
             }
-            else if (m_dVY < 0)
+            else if (m_Velocity.Y < 0)
             {
                 dVYDir = -1.0;
             }
 
             if (m_iXDir != 0)
             {
-                dAX = m_dAX * (double)m_iXDir;
+                acceleration.X = m_Acceleration.X * (double)m_iXDir;
             }
             else
             {
-                dAX = m_dAX / 2.0 * dVXDir * -1;
+                acceleration.X = m_Acceleration.X / 2.0 * dVXDir * -1;
 
-                if (Math.Abs(m_dVX) <= Math.Abs(dAX))
+                if (Math.Abs(m_Velocity.X) <= Math.Abs(acceleration.X))
                 {
-                    dAX = m_dVX * -1;
+                    acceleration.X = m_Velocity.X * -1;
                 }
             }
 
             if (m_iYDir != 0)
             {
-                dAY = m_dAY * (double)m_iYDir;
+                acceleration.Y = m_Acceleration.Y * (double)m_iYDir;
             }
             else
             {
-                dAY = m_dAY / 2.0 * dVYDir * -1;
+                acceleration.Y = m_Acceleration.Y / 2.0 * dVYDir * -1;
 
-                if (Math.Abs(m_dVY) <= Math.Abs(dAY))
+                if (Math.Abs(m_Velocity.Y) <= Math.Abs(acceleration.Y))
                 {
-                    dAY = m_dVY * -1;
+                    acceleration.Y = m_Velocity.Y * -1;
                 }
             }
 
-            m_dVX += dAX;
-            m_dVY += dAY;
+            m_Velocity += acceleration;
 
-            if (Math.Abs(m_dVX) > m_dVXMax)
+            if (Math.Abs(m_Velocity.X) > m_VelocityMax.X)
             {
-                m_dVX = m_dVXMax * dVXDir;
+                m_Velocity.X = m_VelocityMax.X * dVXDir;
             }
 
-            if (Math.Abs(m_dVY) > m_dVYMax)
+            if (Math.Abs(m_Velocity.Y) > m_VelocityMax.Y)
             {
-                m_dVY = m_dVYMax * dVYDir;
+                m_Velocity.Y = m_VelocityMax.Y * dVYDir;
             }
 
-            m_Positon.X += (float)m_dVX;
-            m_Positon.Y += (float)m_dVY;
+            m_Positon += m_Velocity;
 
-            if (m_Positon.X < 0)
+            if (m_Positon.X < 0.0)
             {
                 m_Positon.X = 0;
-                m_dVX = -m_dVX / 2.0;
+                m_Velocity.X = -m_Velocity.X / 2.0;
             }
-            else if (m_Positon.X + m_Size.Width > f_FieldSize.Width)
+            else if (m_Positon.X + m_Size.X > f_FieldSize.X)
             {
-                m_Positon.X = f_FieldSize.Width - m_Size.Width;
-                m_dVX = -m_dVX / 2.0;
+                m_Positon.X = f_FieldSize.X - m_Size.X;
+                m_Velocity.X = -m_Velocity.X / 2.0;
             }
 
-            if (m_Positon.Y < 0)
+            if (m_Positon.Y < 0.0)
             {
                 m_Positon.Y = 0;
-                m_dVY = -m_dVY / 2.0;
+                m_Velocity.Y = -m_Velocity.Y / 2.0;
             }
-            else if (m_Positon.Y + m_Size.Height > f_FieldSize.Height)
+            else if (m_Positon.Y + m_Size.Y > f_FieldSize.Y)
             {
-                m_Positon.Y = f_FieldSize.Height - m_Size.Height;
-                m_dVY = -m_dVY / 2.0;
+                m_Positon.Y = f_FieldSize.Y - m_Size.Y;
+                m_Velocity.Y = -m_Velocity.Y / 2.0;
             }
         }
+        #endregion
 
-        private void UpdateAiming(ref double f_dAimDirection)
+        #region UpdateAiming
+        private void UpdateAiming()
         {
-            f_dAimDirection = 0.0;
-            PointF centerPosition = PointF.Empty;
+            CVector2D centerPosition = CVector2D.Empty;
 
             centerPosition = GetCenterPosition();
 
-            f_dAimDirection = Math.Atan2(m_MousePosition.Y - centerPosition.Y, m_MousePosition.X - centerPosition.X);
+            m_dAimDirection = Math.Atan2(m_MousePosition.Y - centerPosition.Y, m_MousePosition.X - centerPosition.X);
 
-            m_AimPosition.X = centerPosition.X + (float)(Math.Cos(f_dAimDirection) * 2.0);
-            m_AimPosition.Y = centerPosition.Y + (float)(Math.Sin(f_dAimDirection) * 2.0);
+            m_AimPosition.X = centerPosition.X + (float)(Math.Cos(m_dAimDirection) * 2.0);
+            m_AimPosition.Y = centerPosition.Y + (float)(Math.Sin(m_dAimDirection) * 2.0);
         }
+        #endregion
 
-        private void UpdateProjectiles(Size f_FieldSize, CProjectile f_Projectile)
+        #region UpdateProjectiles
+        private void UpdateProjectiles(CVector2D f_FieldSize)
         {
-
+            CProjectile projectile = null;
+            CProjectile projectileSpread = null;
+            CVector2D projectileVelocity = CVector2D.Empty;
+            CVector2D projectilePosition = CVector2D.Empty;
+            CVector2D projectileSize = CVector2D.Empty;
+            int iSpreadCount = 0;
+            double dRandomDirection = 0.0;
 
             for (int i = 0; i < m_lstProjectiles.Count; i++)
             {
-                f_Projectile = m_lstProjectiles[i];
-                f_Projectile.Update(f_FieldSize);
-                if (f_Projectile.OutOfField == true || f_Projectile.Expired == true)
+                projectile = m_lstProjectiles[i];
+                projectile.Update(f_FieldSize);
+
+                if (projectile.Expired == true)
                 {
                     m_lstProjectiles.RemoveAt(i);
                     i--;
+
+                    if(projectile.Size.X > 0.1f && projectile.Size.Y > 0.1f)
+                    {
+                        iSpreadCount = m_Random.Next(5, 10);
+
+                        for(int j=0; j < iSpreadCount; j++)
+                        {
+                            dRandomDirection = m_Random.NextDouble() * Math.PI * 2.0 - Math.PI;
+
+                            projectileVelocity.X = Math.Cos(dRandomDirection) * m_VelocityMax.X / 2.0;
+                            projectileVelocity.Y = Math.Sin(dRandomDirection) * m_VelocityMax.Y / 2.0;
+
+                            projectileSize.X = projectile.Size.X / (double)m_Random.Next(2, 3);
+                            projectileSize.Y = projectile.Size.Y / (double)m_Random.Next(2, 3);
+
+                            projectilePosition.X = projectile.Position.X + projectile.Size.X / 2.0 - projectileSize.X / 2.0f;
+                            projectilePosition.Y = projectile.Position.Y + projectile.Size.Y / 2.0 - projectileSize.Y / 2.0f;
+
+                            projectileSpread = new CProjectile();
+                            projectileSpread.Initialize(projectilePosition, projectileSize, projectileVelocity);
+                            m_lstProjectiles.Add(projectileSpread);
+                        }
+                    }
                 }
             }
         }
+        #endregion
 
-        private void UpdateShooting(CProjectile f_Projectile, ref double f_dAimDirection)
+        #region UpdateShooting
+        private void UpdateShooting()
         {
-            double dVXProjectile = 0.0;
-            double dVYProjectile = 0.0;
-            PointF projectilePosition = PointF.Empty;
-            SizeF projectileSize = SizeF.Empty;
+            CProjectile projectile = null;
+            CVector2D projectilePosition = CVector2D.Empty;
+            CVector2D projectileSize = CVector2D.Empty;
+            CVector2D projectileVelocity = CVector2D.Empty;
 
             if (m_bShootingActive == true
                  && DateTime.Now > m_dtLastShoot.AddMilliseconds(m_iShootIntervall))
             {
-                dVXProjectile = m_dVX + Math.Cos(f_dAimDirection) * m_dVXMax / 2.0;
-                dVYProjectile = m_dVY + Math.Sin(f_dAimDirection) * m_dVYMax / 2.0;
+                projectileVelocity.X = m_Velocity.X + Math.Cos(m_dAimDirection) * m_VelocityMax.X / 2.0;
+                projectileVelocity.Y = m_Velocity.Y + Math.Sin(m_dAimDirection) * m_VelocityMax.Y / 2.0;
 
-                projectileSize.Width = 0.2f;
-                projectileSize.Height = 0.2f;
+                projectileSize.X = 0.2f;
+                projectileSize.Y = 0.2f;
 
-                projectilePosition.X = m_AimPosition.X - projectileSize.Width / 2.0f;
-                projectilePosition.Y = m_AimPosition.Y - projectileSize.Height / 2.0f;
+                projectilePosition.X = m_AimPosition.X - projectileSize.X / 2.0f;
+                projectilePosition.Y = m_AimPosition.Y - projectileSize.Y / 2.0f;
 
-                f_Projectile = new CProjectile();
-                f_Projectile.Initialize(projectilePosition, projectileSize, dVXProjectile, dVYProjectile, 2, 4);
-                m_lstProjectiles.Add(f_Projectile);
+                projectile = new CProjectile();
+                projectile.Initialize(projectilePosition, projectileSize, projectileVelocity);
+                m_lstProjectiles.Add(projectile);
 
                 m_dtLastShoot = DateTime.Now;
             }
         }
-
-        #region Update
-        public void Update(Size f_FieldSize)
-        {
-            CProjectile projectile = null;
-            double dAimDirection = 0.0;
-
-            UpdateMovement(f_FieldSize);
-            UpdateAiming(ref dAimDirection);
-            UpdateProjectiles(f_FieldSize, projectile);
-            UpdateShooting(projectile, ref dAimDirection);
-
-            #region Debug
-            m_strDebugText = string.Empty;
-            m_strDebugText += string.Format("X:\t{0:0.000}\n", m_Positon.X);
-            m_strDebugText += string.Format("Y:\t{0:0.000}\n", m_Positon.Y);
-            m_strDebugText += string.Format("VX:\t{0:0.000}\n", m_dVX);
-            m_strDebugText += string.Format("VY:\t{0:0.000}\n", m_dVY);
-            #endregion
-        }
+        #endregion
         #endregion
 
         #region Draw
         public void Draw(Graphics f_Graphics, PointF f_Offset, SizeF f_TileSize)
         {
-            PointF centerPosition = GetCenterPosition();
+            CVector2D centerPosition = GetCenterPosition();
 
-            f_Graphics.FillRectangle(Brushes.Green, f_Offset.X + m_Positon.X * f_TileSize.Width, f_Offset.Y + m_Positon.Y * f_TileSize.Height,
-                m_Size.Width * f_TileSize.Width, m_Size.Height * f_TileSize.Height);
+            f_Graphics.FillRectangle(Brushes.Green,
+                f_Offset.X + (float)m_Positon.X * f_TileSize.Width,
+                f_Offset.Y + (float)m_Positon.Y * f_TileSize.Height,
+                (float)m_Size.X * f_TileSize.Width,
+                (float)m_Size.Y * f_TileSize.Height);
 
-            f_Graphics.DrawLine(Pens.LightGreen, f_Offset.X + centerPosition.X * f_TileSize.Width, f_Offset.Y + centerPosition.Y * f_TileSize.Height,
-                f_Offset.X + m_AimPosition.X * f_TileSize.Width, f_Offset.Y + m_AimPosition.Y * f_TileSize.Height);
+            f_Graphics.DrawLine(Pens.LightGreen, 
+                f_Offset.X + (float)centerPosition.X * f_TileSize.Width,
+                f_Offset.Y + (float)centerPosition.Y * f_TileSize.Height,
+                f_Offset.X + (float)m_AimPosition.X * f_TileSize.Width,
+                f_Offset.Y + (float)m_AimPosition.Y * f_TileSize.Height);
 
             #region Projectiles
-            foreach (CProjectile projectile in m_lstProjectiles)
+            for (int i = 0; i < m_lstProjectiles.Count; i++)
             {
-                projectile.Draw(f_Graphics, f_Offset, f_TileSize);
+                m_lstProjectiles[i].Draw(f_Graphics, f_Offset, f_TileSize);
             }
             #endregion
 
@@ -297,7 +342,7 @@ namespace Spaceship_Test
         #endregion
 
         #region MouseAction
-        public void MouseAction(EMouseAction f_eMouseAction, EMouseButton f_eMouseButton, PointF f_MousePosition)
+        public void MouseAction(EMouseAction f_eMouseAction, EMouseButton f_eMouseButton, CVector2D f_MousePosition)
         {
             m_MousePosition = f_MousePosition;
 
@@ -319,12 +364,12 @@ namespace Spaceship_Test
         #endregion
 
         #region GetCenterPosition
-        private PointF GetCenterPosition()
+        private CVector2D GetCenterPosition()
         {
-            PointF centerPosition = PointF.Empty;
+            CVector2D centerPosition = CVector2D.Empty;
 
-            centerPosition.X = m_Positon.X + m_Size.Width / 2.0f;
-            centerPosition.Y = m_Positon.Y + m_Size.Height / 2.0f;
+            centerPosition.X = m_Positon.X + m_Size.X / 2.0f;
+            centerPosition.Y = m_Positon.Y + m_Size.Y / 2.0f;
 
             return centerPosition;
         }

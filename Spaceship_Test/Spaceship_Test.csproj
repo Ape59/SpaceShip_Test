@@ -46,6 +46,7 @@
     <Compile Include="CGame.cs" />
     <Compile Include="CPlayer.cs" />
     <Compile Include="CProjectile.cs" />
+    <Compile Include="CVector2D.cs" />
     <Compile Include="Form_Game.cs">
       <SubType>Form</SubType>
     </Compile>

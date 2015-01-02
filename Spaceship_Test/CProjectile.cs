@@ -8,17 +8,13 @@ namespace Spaceship_Test
     class CProjectile
     {
         #region Members
-        private PointF m_Positon = PointF.Empty;
-        private SizeF m_Size = SizeF.Empty;
-        private double m_dVX = 0.0;
-        private double m_dVY = 0.0;
+        private CVector2D m_Positon = null;
+        private CVector2D m_Size = null;
+        private CVector2D m_Velocity = null;
         private bool m_bOutOfField = false;
         private bool m_bExpired = false;
         private DateTime m_dtSpawnTime = DateTime.MinValue;
         private int m_iExpireDuration = 3000;
-        private int m_iMaxDivision = 0;
-        private int m_iSpreadFactor = 4;
-        private int m_iDivision = 0;
         #endregion
 
         #region Get/Set
@@ -31,34 +27,66 @@ namespace Spaceship_Test
         {
             get { return m_bExpired; }
         }
+
+        public CVector2D Size
+        {
+            get { return m_Size; }
+        }
+
+        public CVector2D Position
+        {
+            get { return m_Positon; }
+        }
+
+        public CVector2D Velocity
+        {
+            get { return m_Velocity; }
+        }
         #endregion
 
         #region Initialize
-        public void Initialize(PointF f_Position, SizeF f_Size, double f_dVX, double f_dVY)
-        {
-            this.Initialize(f_Position, f_Size, f_dVX, f_dVY, 0, 0);
-        }
-
-        public void Initialize(PointF f_Position, SizeF f_Size, double f_dVX, double f_dVY, int f_iMaxDivision, int f_iSpreadFactor)
+        public void Initialize(CVector2D f_Position, CVector2D f_Size, CVector2D f_Velocity)
         {
             m_Positon = f_Position;
             m_Size = f_Size;
-            m_dVX = f_dVX;
-            m_dVY = f_dVY;
+            m_Velocity = f_Velocity;
             m_dtSpawnTime = DateTime.Now;
         }
         #endregion
 
         #region Update
-        public void Update(Size f_FieldSize)
+        public void Update(CVector2D f_FieldSize)
         {
-            m_Positon.X += (float)m_dVX;
-            m_Positon.Y += (float)m_dVY;
+            m_Positon += m_Velocity;
 
+            if (m_Positon.X < 0.0)
+            {
+                m_Positon.X = 0;
+                m_Velocity.X = -m_Velocity.X / 2.0;
+            }
+            else if (m_Positon.X + m_Size.X > f_FieldSize.X)
+            {
+                m_Positon.X = f_FieldSize.X - m_Size.X;
+                m_Velocity.X = -m_Velocity.X / 2.0;
+            }
+
+            if (m_Positon.Y < 0.0)
+            {
+                m_Positon.Y = 0;
+                m_Velocity.Y = -m_Velocity.Y / 2.0;
+            }
+            else if (m_Positon.Y + m_Size.Y > f_FieldSize.Y)
+            {
+                m_Positon.Y = f_FieldSize.Y - m_Size.Y;
+                m_Velocity.Y = -m_Velocity.Y / 2.0;
+            }
+
+            /*
             m_bOutOfField = m_Positon.X + m_Size.Width < 0
                 || m_Positon.X > f_FieldSize.Width
                 || m_Positon.Y + m_Size.Height < 0
                 || m_Positon.Y > f_FieldSize.Height;
+            */
 
             m_bExpired = DateTime.Now >= m_dtSpawnTime.AddMilliseconds(m_iExpireDuration);
         }
@@ -67,8 +95,11 @@ namespace Spaceship_Test
         #region Draw
         public void Draw(Graphics f_Graphics, PointF f_Offset, SizeF f_TileSize)
         {
-            f_Graphics.FillRectangle(Brushes.LightGreen, f_Offset.X + m_Positon.X * f_TileSize.Width, f_Offset.Y + m_Positon.Y * f_TileSize.Height,
-                m_Size.Width * f_TileSize.Width, m_Size.Height * f_TileSize.Height);
+            f_Graphics.FillRectangle(Brushes.LightGreen, 
+                f_Offset.X + (float)m_Positon.X * f_TileSize.Width,
+                f_Offset.Y + (float)m_Positon.Y * f_TileSize.Height,
+                (float)m_Size.X * f_TileSize.Width,
+                (float)m_Size.Y * f_TileSize.Height);
         }
         #endregion
     }

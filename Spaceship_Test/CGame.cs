@@ -39,10 +39,10 @@ namespace Spaceship_Test
     {
         #region Members
         private CPlayer m_Player = null;
+        private CVector2D m_FieldSize = null;
         private Thread m_tGameloopThread = null;
         private VoidDelegate m_OnDraw = null;
         private bool m_bGameloopActive = false;
-        private Size m_FieldSize = Size.Empty;
         #endregion
 
         #region Initialize
@@ -50,10 +50,10 @@ namespace Spaceship_Test
         {
             m_OnDraw = f_OnDraw;
 
-            m_FieldSize = new Size(40, 30);
+            m_FieldSize = new CVector2D(40, 30);
 
             m_Player = new CPlayer();
-            m_Player.Initialize(new PointF(m_FieldSize.Width / 2, m_FieldSize.Height / 2), new Size(2, 1));
+            m_Player.Initialize(new CVector2D(m_FieldSize.X / 2, m_FieldSize.Y / 2), new CVector2D(2, 1));
 
             if (m_bGameloopActive == false)
             {
@@ -119,13 +119,21 @@ namespace Spaceship_Test
             f_Graphics.Clear(Color.Black);
 
             //Grid
-            for (int x = 0; x <= m_FieldSize.Width; x++)
+            for (float x = 0; x <= m_FieldSize.X; x++)
             {
-                f_Graphics.DrawLine(Pens.DarkSlateGray, offset.X + x * tileSize.Width, offset.Y, offset.X + x * tileSize.Width, offset.Y + m_FieldSize.Height * tileSize.Height);
+                f_Graphics.DrawLine(Pens.DarkSlateGray, 
+                    offset.X + x * tileSize.Width, 
+                    offset.Y, 
+                    offset.X + x * tileSize.Width, 
+                    offset.Y + (float)m_FieldSize.Y * tileSize.Height);
             }
-            for (int y = 0; y <= m_FieldSize.Height; y++)
+            for (float y = 0; y <= m_FieldSize.Y; y++)
             {
-                f_Graphics.DrawLine(Pens.DarkSlateGray, offset.X, offset.Y + y * tileSize.Height, offset.X + m_FieldSize.Width * tileSize.Width, offset.Y + y * tileSize.Height);
+                f_Graphics.DrawLine(Pens.DarkSlateGray, 
+                    offset.X, 
+                    offset.Y + y * tileSize.Height,
+                    offset.X + (float)m_FieldSize.X * tileSize.Width, 
+                    offset.Y + y * tileSize.Height);
             }
 
             //Player
@@ -145,7 +153,7 @@ namespace Spaceship_Test
         {
             SizeF tileSize = GetTileSize(f_ControlSize);
             PointF offset = GetOffset(f_ControlSize);
-            PointF mousePosition = GetOffset(f_ControlSize);
+            CVector2D mousePosition = CVector2D.Empty;
 
             mousePosition.X = (float)(f_MouseControlPosition.X - offset.X) / tileSize.Width;
             mousePosition.Y = (float)(f_MouseControlPosition.Y - offset.Y) / tileSize.Height;
@@ -159,8 +167,8 @@ namespace Spaceship_Test
         {
             SizeF tileSize = SizeF.Empty;
 
-            tileSize.Width = f_ControlSize.Width / m_FieldSize.Width;
-            tileSize.Height = f_ControlSize.Height / m_FieldSize.Height;
+            tileSize.Width = (float)(f_ControlSize.Width / m_FieldSize.X);
+            tileSize.Height = (float)(f_ControlSize.Height / m_FieldSize.Y);
 
             if(tileSize.Width < tileSize.Height)
             {
@@ -181,8 +189,8 @@ namespace Spaceship_Test
             SizeF tileSize = GetTileSize(f_ControlSize);
             PointF offset = PointF.Empty;
 
-            offset.X = (f_ControlSize.Width - tileSize.Width * m_FieldSize.Width) / 2.0f;
-            offset.Y = (f_ControlSize.Height - tileSize.Height * m_FieldSize.Height) / 2.0f;
+            offset.X = (float)(f_ControlSize.Width - tileSize.Width * m_FieldSize.X) / 2.0f;
+            offset.Y = (float)(f_ControlSize.Height - tileSize.Height * m_FieldSize.Y) / 2.0f;
 
             return offset;
         }

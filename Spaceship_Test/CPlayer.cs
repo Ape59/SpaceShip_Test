@@ -174,9 +174,9 @@ namespace Spaceship_Test
         {
             CProjectile projectile = null;
             CProjectile projectileSpread = null;
-            CVector2D projectileVelocity = CVector2D.Empty;
-            CVector2D projectilePosition = CVector2D.Empty;
-            CVector2D projectileSize = CVector2D.Empty;
+            CVector2D projectileVelocity = null;
+            CVector2D projectilePosition = null;
+            CVector2D projectileSize = null;
             int iSpreadCount = 0;
             double dRandomDirection = 0.0;
 
@@ -196,14 +196,17 @@ namespace Spaceship_Test
 
                         for(int j=0; j < iSpreadCount; j++)
                         {
-                            dRandomDirection = m_Random.NextDouble() * Math.PI * 2.0 - Math.PI;
+                            dRandomDirection = m_Random.NextDouble() * Math.PI * 2.0;
 
+                            projectileVelocity = new CVector2D();
                             projectileVelocity.X = Math.Cos(dRandomDirection) * m_VelocityMax.X / 2.0;
                             projectileVelocity.Y = Math.Sin(dRandomDirection) * m_VelocityMax.Y / 2.0;
 
+                            projectileSize = new CVector2D();
                             projectileSize.X = projectile.Size.X / (double)m_Random.Next(2, 3);
                             projectileSize.Y = projectile.Size.Y / (double)m_Random.Next(2, 3);
 
+                            projectilePosition = new CVector2D();
                             projectilePosition.X = projectile.Position.X + projectile.Size.X / 2.0 - projectileSize.X / 2.0f;
                             projectilePosition.Y = projectile.Position.Y + projectile.Size.Y / 2.0 - projectileSize.Y / 2.0f;
 
@@ -221,19 +224,22 @@ namespace Spaceship_Test
         private void UpdateShooting()
         {
             CProjectile projectile = null;
-            CVector2D projectilePosition = CVector2D.Empty;
-            CVector2D projectileSize = CVector2D.Empty;
-            CVector2D projectileVelocity = CVector2D.Empty;
+            CVector2D projectilePosition = null;
+            CVector2D projectileSize = null;
+            CVector2D projectileVelocity = null;
 
             if (m_bShootingActive == true
                  && DateTime.Now > m_dtLastShoot.AddMilliseconds(m_iShootIntervall))
             {
+                projectileVelocity = new CVector2D();
                 projectileVelocity.X = m_Velocity.X + Math.Cos(m_dAimDirection) * m_VelocityMax.X / 2.0;
                 projectileVelocity.Y = m_Velocity.Y + Math.Sin(m_dAimDirection) * m_VelocityMax.Y / 2.0;
 
+                projectileSize = new CVector2D();
                 projectileSize.X = 0.2f;
                 projectileSize.Y = 0.2f;
 
+                projectilePosition = new CVector2D();
                 projectilePosition.X = m_AimPosition.X - projectileSize.X / 2.0f;
                 projectilePosition.Y = m_AimPosition.Y - projectileSize.Y / 2.0f;
 

@@ -105,7 +105,9 @@ namespace Spaceship_Test
         #region Update
         private void Update()
         {
-            m_Player.Update(m_FieldSize);
+            double dUpdateFactor = 1.0;
+
+            m_Player.Update(dUpdateFactor, m_FieldSize);
         }
         #endregion
 

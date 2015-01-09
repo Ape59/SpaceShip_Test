@@ -8,7 +8,7 @@ namespace Spaceship_Test
     class CPlayer
     {
         #region Members
-        private CVector2D m_Positon = null;
+        private CVector2D m_Position = null;
         private CVector2D m_Size = null;
         private CVector2D m_AimPosition = null;
         private CVector2D m_MousePosition = null;
@@ -30,7 +30,7 @@ namespace Spaceship_Test
         #region Initialize
         public void Initialize(CVector2D f_Position, CVector2D f_Size)
         {
-            m_Positon = f_Position;
+            m_Position = f_Position;
             m_Size = f_Size;
 
             m_AimPosition = CVector2D.Empty;
@@ -46,17 +46,17 @@ namespace Spaceship_Test
         #endregion
 
         #region Update
-        public void Update(CVector2D f_FieldSize)
+        public void Update(double f_dUpdateFactor, CVector2D f_FieldSize)
         {
-            UpdateMovement(f_FieldSize);
+            UpdateMovement(f_dUpdateFactor, f_FieldSize);
             UpdateAiming();
-            UpdateProjectiles(f_FieldSize);
-            UpdateShooting();
+            UpdateShooting(f_dUpdateFactor);
+            UpdateProjectiles(f_dUpdateFactor, f_FieldSize);
 
             #region Debug
             m_strDebugText = string.Empty;
-            m_strDebugText += string.Format("X:\t{0:0.000}\n", m_Positon.X);
-            m_strDebugText += string.Format("Y:\t{0:0.000}\n", m_Positon.Y);
+            m_strDebugText += string.Format("X:\t{0:0.000}\n", m_Position.X);
+            m_strDebugText += string.Format("Y:\t{0:0.000}\n", m_Position.Y);
             m_strDebugText += string.Format("VX:\t{0:0.000}\n", m_Velocity.X);
             m_strDebugText += string.Format("VY:\t{0:0.000}\n", m_Velocity.Y);
             m_strDebugText += string.Format("a:\t{0:0.000}\n", m_dAimDirection);
@@ -65,7 +65,7 @@ namespace Spaceship_Test
         }
 
         #region UpdateMovement
-        private void UpdateMovement(CVector2D f_FieldSize)
+        private void UpdateMovement(double f_dUpdateFactor, CVector2D f_FieldSize)
         {
             CVector2D acceleration = CVector2D.Empty;
             double dVXDir = 0.0;
@@ -117,7 +117,7 @@ namespace Spaceship_Test
                 }
             }
 
-            m_Velocity += acceleration;
+            m_Velocity += acceleration * f_dUpdateFactor;
 
             if (Math.Abs(m_Velocity.X) > m_VelocityMax.X)
             {
@@ -129,27 +129,27 @@ namespace Spaceship_Test
                 m_Velocity.Y = m_VelocityMax.Y * dVYDir;
             }
 
-            m_Positon += m_Velocity;
+            m_Position += m_Velocity * f_dUpdateFactor;
 
-            if (m_Positon.X < 0.0)
+            if (m_Position.X < 0.0)
             {
-                m_Positon.X = 0;
+                m_Position.X = 0;
                 m_Velocity.X = -m_Velocity.X / 2.0;
             }
-            else if (m_Positon.X + m_Size.X > f_FieldSize.X)
+            else if (m_Position.X + m_Size.X > f_FieldSize.X)
             {
-                m_Positon.X = f_FieldSize.X - m_Size.X;
+                m_Position.X = f_FieldSize.X - m_Size.X;
                 m_Velocity.X = -m_Velocity.X / 2.0;
             }
 
-            if (m_Positon.Y < 0.0)
+            if (m_Position.Y < 0.0)
             {
-                m_Positon.Y = 0;
+                m_Position.Y = 0;
                 m_Velocity.Y = -m_Velocity.Y / 2.0;
             }
-            else if (m_Positon.Y + m_Size.Y > f_FieldSize.Y)
+            else if (m_Position.Y + m_Size.Y > f_FieldSize.Y)
             {
-                m_Positon.Y = f_FieldSize.Y - m_Size.Y;
+                m_Position.Y = f_FieldSize.Y - m_Size.Y;
                 m_Velocity.Y = -m_Velocity.Y / 2.0;
             }
         }
@@ -169,12 +169,38 @@ namespace Spaceship_Test
         }
         #endregion
 
+        #region UpdateShooting
+        private void UpdateShooting(double f_dUpdateFactor)
+        {
+            CProjectile projectile = null;
+            CVector2D projectilePosition = null;
+            CVector2D projectileSize = null;
+
+            if (m_bShootingActive == true
+                 && DateTime.Now > m_dtLastShoot.AddMilliseconds(m_iShootIntervall / f_dUpdateFactor))
+            {
+                projectileSize = new CVector2D();
+                projectileSize.X = 0.3f;
+                projectileSize.Y = 0.3f;
+
+                projectilePosition = new CVector2D();
+                projectilePosition.X = m_AimPosition.X - projectileSize.X / 2.0f;
+                projectilePosition.Y = m_AimPosition.Y - projectileSize.Y / 2.0f;
+
+                projectile = new CProjectile();
+                projectile.Initialize(projectilePosition, projectileSize, m_dAimDirection);
+                m_lstProjectiles.Add(projectile);
+
+                m_dtLastShoot = DateTime.Now;
+            }
+        }
+        #endregion
+
         #region UpdateProjectiles
-        private void UpdateProjectiles(CVector2D f_FieldSize)
+        private void UpdateProjectiles(double f_dUpdateFactor, CVector2D f_FieldSize)
         {
             CProjectile projectile = null;
             CProjectile projectileSpread = null;
-            CVector2D projectileVelocity = null;
             CVector2D projectilePosition = null;
             CVector2D projectileSize = null;
             int iSpreadCount = 0;
@@ -183,7 +209,7 @@ namespace Spaceship_Test
             for (int i = 0; i < m_lstProjectiles.Count; i++)
             {
                 projectile = m_lstProjectiles[i];
-                projectile.Update(f_FieldSize);
+                projectile.Update(f_dUpdateFactor, f_FieldSize);
 
                 if (projectile.Expired == true)
                 {
@@ -198,10 +224,6 @@ namespace Spaceship_Test
                         {
                             dRandomDirection = m_Random.NextDouble() * Math.PI * 2.0;
 
-                            projectileVelocity = new CVector2D();
-                            projectileVelocity.X = Math.Cos(dRandomDirection) * m_VelocityMax.X / 2.0;
-                            projectileVelocity.Y = Math.Sin(dRandomDirection) * m_VelocityMax.Y / 2.0;
-
                             projectileSize = new CVector2D();
                             projectileSize.X = projectile.Size.X / (double)m_Random.Next(2, 3);
                             projectileSize.Y = projectile.Size.Y / (double)m_Random.Next(2, 3);
@@ -211,43 +233,11 @@ namespace Spaceship_Test
                             projectilePosition.Y = projectile.Position.Y + projectile.Size.Y / 2.0 - projectileSize.Y / 2.0f;
 
                             projectileSpread = new CProjectile();
-                            projectileSpread.Initialize(projectilePosition, projectileSize, projectileVelocity);
+                            projectileSpread.Initialize(projectilePosition, projectileSize, dRandomDirection);
                             m_lstProjectiles.Add(projectileSpread);
                         }
                     }
                 }
-            }
-        }
-        #endregion
-
-        #region UpdateShooting
-        private void UpdateShooting()
-        {
-            CProjectile projectile = null;
-            CVector2D projectilePosition = null;
-            CVector2D projectileSize = null;
-            CVector2D projectileVelocity = null;
-
-            if (m_bShootingActive == true
-                 && DateTime.Now > m_dtLastShoot.AddMilliseconds(m_iShootIntervall))
-            {
-                projectileVelocity = new CVector2D();
-                projectileVelocity.X = m_Velocity.X + Math.Cos(m_dAimDirection) * m_VelocityMax.X / 2.0;
-                projectileVelocity.Y = m_Velocity.Y + Math.Sin(m_dAimDirection) * m_VelocityMax.Y / 2.0;
-
-                projectileSize = new CVector2D();
-                projectileSize.X = 0.2f;
-                projectileSize.Y = 0.2f;
-
-                projectilePosition = new CVector2D();
-                projectilePosition.X = m_AimPosition.X - projectileSize.X / 2.0f;
-                projectilePosition.Y = m_AimPosition.Y - projectileSize.Y / 2.0f;
-
-                projectile = new CProjectile();
-                projectile.Initialize(projectilePosition, projectileSize, projectileVelocity);
-                m_lstProjectiles.Add(projectile);
-
-                m_dtLastShoot = DateTime.Now;
             }
         }
         #endregion
@@ -259,8 +249,8 @@ namespace Spaceship_Test
             CVector2D centerPosition = GetCenterPosition();
 
             f_Graphics.FillRectangle(Brushes.Green,
-                f_Offset.X + (float)m_Positon.X * f_TileSize.Width,
-                f_Offset.Y + (float)m_Positon.Y * f_TileSize.Height,
+                f_Offset.X + (float)m_Position.X * f_TileSize.Width,
+                f_Offset.Y + (float)m_Position.Y * f_TileSize.Height,
                 (float)m_Size.X * f_TileSize.Width,
                 (float)m_Size.Y * f_TileSize.Height);
 
@@ -374,8 +364,8 @@ namespace Spaceship_Test
         {
             CVector2D centerPosition = CVector2D.Empty;
 
-            centerPosition.X = m_Positon.X + m_Size.X / 2.0f;
-            centerPosition.Y = m_Positon.Y + m_Size.Y / 2.0f;
+            centerPosition.X = m_Position.X + m_Size.X / 2.0f;
+            centerPosition.Y = m_Position.Y + m_Size.Y / 2.0f;
 
             return centerPosition;
         }
